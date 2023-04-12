@@ -5,9 +5,11 @@ from tensorflow import keras
 import time
 
 app=Flask(__name__)
-camera=cv2.VideoCapture(0)
 
-model = keras.models.load_model("my_model_trained/content/my_model_trained")
+camera= cv2.VideoCapture(0)
+# cv2.VideoCapture(0)
+
+# model = keras.models.load_model("my_model_trained/content/my_model_trained")
 
 def generate_frames():
     while True:
@@ -43,3 +45,5 @@ def video():
 
 if __name__=="__main__":
     app.run(debug=True)
+
+
