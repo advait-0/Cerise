@@ -1,0 +1,7 @@
+DROP TABLE IF EXISTS db1;
+
+CREATE TABLE db1 (
+    content VARCHAR(40) NOT NULL DEFAULT "default.jpg",
+    anomaly_type VARCHAR(25) NOT NULL,
+    time_of_occur TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

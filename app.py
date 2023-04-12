@@ -3,8 +3,12 @@ import cv2
 import tensorflow as tf
 from tensorflow import keras
 import time
+from flask_sqlalchemy import SQLAlchemy
 
 app=Flask(__name__)
+app.config['SECRET_KEY'] = '5791628bb0b13ce0c676dfde280ba245'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
+db = SQLAlchemy(app)
 
 camera= cv2.VideoCapture(0)
 # cv2.VideoCapture(0)
