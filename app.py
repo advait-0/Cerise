@@ -28,7 +28,7 @@ model = tf.keras.models.load_model("C:/Users/Subodh/OneDrive/Desktop/Hackathon/c
     
 @app.route('/')
 def index():
-    return 'Hello World'
+    return render_template('index.html')
 
 def detect_anomalys(frame):
 
@@ -37,7 +37,7 @@ def detect_anomalys(frame):
     frame = cv2.resize(frame, (64, 64))
     frame = preprocess_input(frame)
     prob = model.predict(np.array([frame]))
-    print(prob)
+    #print(prob)
     for i in prob[0]:
         #print(i)
         if (prob[0][0] > 0.5):
