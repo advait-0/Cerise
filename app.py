@@ -18,14 +18,14 @@ import io
 
 app=Flask(__name__)
 
-engine = create_engine('mysql://root:pass1234@localhost/anomaly_detect')
+engine = create_engine('mysql://root:pass1234@localhost/db2')
 Base = declarative_base()
 
 class Video(Base):
     __tablename__ = 'videos'
     id = Column(Integer, primary_key=True)
     timestamp = Column(DateTime, default=func.now())
-    img_path = Column(String(70))
+    data = Column(LargeBinary)
     anomaly = Column(String(70))
 
 Base.metadata.create_all(engine)
@@ -66,7 +66,7 @@ def save_picture(form_picture):
 
 def generate_frames():
     success = 1
-    time_now = time.time() + 60 
+    time_now = time.time() 
     count = 0
     while success:
             
@@ -81,24 +81,19 @@ def generate_frames():
         # x = np.asarray(images_list)
         # # x = cv2.resize(x, (64,64))
         if count < 10:
-
-            if detect_anomaly(frame) > 0.5:
-                if time.time() - time_now > 60:
                     count += 1
+                    
 
         else:
+            print("Anomaly")
             time_now = time.time()
             count = 0
-            parent_dir = app.root_path
-            child_dir = "/anomalies"
 
-            path = os.path.join(parent_dir, child_dir)
-            i = Image.open(frame)
-            i.save(path)
+            img = Video(data=frame.tobytes(),anomaly="anomaly" )
+            session.add(img)
+            session.commit()
             
-            vid = Video()  
-            vid.anomaly = "Anomaly"         
-            vid.img_path = path
+            
 
         if not success:
             break
@@ -111,7 +106,7 @@ def generate_frames():
         # print("FPS: {0}".format(int(fps)))
         # print(prob)
         
-
+        
         yield(b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
