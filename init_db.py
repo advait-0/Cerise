@@ -1,5 +1,7 @@
 import sqlite3
+from flask import Flask,render_template,Response
 
+app=Flask(__name__)
 connection = sqlite3.connect('database.db')
 
 
@@ -17,5 +19,9 @@ cur.execute("INSERT INTO db1 (anomaly_type, time_of_occur) VALUES ('/static/img3
 #             ('Second Post', 'Content for the second post')
 #             )
 
+
 connection.commit()
 connection.close()
+
+if __name__ == "__main__":
+    app.run(debug=True)

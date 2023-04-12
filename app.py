@@ -4,6 +4,7 @@ import tensorflow as tf
 from tensorflow import keras
 import time
 from flask_sqlalchemy import SQLAlchemy
+import sqlite3
 
 app=Flask(__name__)
 app.config['SECRET_KEY'] = '5791628bb0b13ce0c676dfde280ba245'
@@ -38,9 +39,22 @@ def generate_frames():
         yield(b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
+conn = sqlite3.connect('database.db', check_same_thread=False)
+
+def get_db_connection():
+    
+    conn.row_factory = sqlite3.Row
+    return conn
+
+@app.route('/index')
+def index():
+    conn = get_db_connection()
+    posts = conn.execute('SELECT * FROM db1').fetchall()
+   
+    return render_template('index.html', posts=posts)
 
 @app.route('/')
-def index():
+def index2():
     return render_template('index.html')
 
 @app.route('/video')
@@ -50,4 +64,4 @@ def video():
 if __name__=="__main__":
     app.run(debug=True)
 
-
+    conn.close()

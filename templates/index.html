@@ -78,5 +78,14 @@ img {
 <div class="w3-container" style="padding:128px 16px" id="live">
   <h3 class="w3-center">LIVE FEED FROM THE CAMERA</h3>
     <img src="{{ url_for('video') }}" width="50%">
+
+{% for item in posts %}
+        <tr>
+            <td>{{ item['content']}}</td>
+            <td>{{ item['anomaly_type']}}</td>
+            <td>{{ item['time_of_occur']}}</td>
+        </tr>
+{% endfor %}
+
 </body>
 </html>
