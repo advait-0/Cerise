@@ -24,13 +24,15 @@ Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()
 
+model = tf.keras.models.load_model("C:/Users/Subodh/OneDrive/Desktop/Hackathon/content/my_model_trained")
+    
 @app.route('/')
 def index():
     return 'Hello World'
 
 def detect_anomalys(frame):
 
-    model = tf.keras.models.load_model("C:/Users/Subodh/OneDrive/Desktop/Hackathon/content/my_model_trained")
+    #model = tf.keras.models.load_model("C:/Users/Subodh/OneDrive/Desktop/Hackathon/content/my_model_trained")
     
     frame = cv2.resize(frame, (64, 64))
     frame = preprocess_input(frame)
@@ -75,20 +77,6 @@ def detect_anomalys(frame):
 
 cap = cv2.VideoCapture(0)
 
-'''def generate_frames():
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-        processed_frame, anomaly = detect_anomalys(frame)
-
-        #print(processed_frame)
-    
-        ret, buffer = cv2.imencode('.jpg', processed_frame)
-        frame = buffer.tobytes()
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')'''
-
 def process_video():
     cap = cv2.VideoCapture(0)
     while True:
@@ -111,40 +99,12 @@ def process_video():
         
     cap.release()
 
-'''def gen():
-    cap = cv2.VideoCapture(0)
-
-    while True:
-        ret, frame = cap.read()
-        
-
-        frame = detect_anomalys(frame)
-
-        with Session() as session:
-            img = Video(data=frame1)
-            session.add(video)
-            session.commit()
-
-            img = Video(frame=frame.tobytes())
-            session.add(img)
-            session.commit()
-
-            
-        ret, jpeg = cv2.imencode('.jpg', frame)
-        frame = jpeg.tobytes()
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-
-    cap.release()'''
-
 @app.route('/video_feed')
 def video():
     return Response(process_video(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
-'''@app.route('/video_feed')
-def video_feed():
-    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
-'''
+
+
 if __name__ == '__main__':
     app.run(debug=True)
 
