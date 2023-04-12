@@ -1,4 +1,5 @@
-from flask import Flask, render_template, Response
+import json
+from flask import Flask, jsonify, render_template, Response
 import cv2
 import numpy as np
 import tensorflow as tf
@@ -7,7 +8,9 @@ from keras.applications.resnet import preprocess_input
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, LargeBinary, DateTime, func, String
+from sqlalchemy import Column, Integer, LargeBinary, DateTime, func, String , Table, select, MetaData
+from PIL import Image
+import io
 
 app = Flask(__name__)
 engine = create_engine('mysql://root:subumitu#1@localhost/dbname')
@@ -23,6 +26,8 @@ class Video(Base):
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()
+
+metadata = MetaData()
 
 model = tf.keras.models.load_model("C:/Users/Subodh/OneDrive/Desktop/Hackathon/content/my_model_trained")
     
@@ -98,11 +103,31 @@ def process_video():
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
         
     cap.release()
+conn = engine.connect()
+table = Table('Videos', metadata,schema=None)
+def get_frame():
+    #select_query = select(table)
+    #results = conn.execute(select_query)
+    results = session.query('Videos').all
+    data = []
+    for response in results:
+        image_frame = Image.open(io.BytesIO(response.data))  #response['data']
+
+        data.append({'id': response['id'],
+                     'time': response['timestamp'],
+                     'image_frame': image_frame,
+                       'anomaly':response['anomaly'] })
+        
+    return jsonify(response)
+    # return Response(json.dumps(data, default=str), mimetype='application/json')
 
 @app.route('/video_feed')
 def video():
     return Response(process_video(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
+@app.route('/get_data')
+def video_retrieve():
+    return Response(get_frame())
 
 
 if __name__ == '__main__':
