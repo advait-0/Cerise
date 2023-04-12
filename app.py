@@ -1,3 +1,4 @@
+import base64
 import json
 from flask import Flask, jsonify, render_template, Response
 import cv2
@@ -9,8 +10,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, LargeBinary, DateTime, func, String , Table, select, MetaData
-from PIL import Image
-import io
+
+from transformers import AutoProcessor, AutoModelForSeq2SeqLM
 
 app = Flask(__name__)
 engine = create_engine('mysql://root:subumitu#1@localhost/dbname')
@@ -30,6 +31,9 @@ session = Session()
 metadata = MetaData()
 
 model = tf.keras.models.load_model("C:/Users/Subodh/OneDrive/Desktop/Hackathon/content/my_model_trained")
+
+processor = AutoProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
+model2 = AutoModelForSeq2SeqLM.from_pretrained("Salesforce/blip-image-captioning-base")
     
 @app.route('/')
 def index():
@@ -76,9 +80,10 @@ def detect_anomalys(frame):
         else:
             anomaly = False
     if anomaly != False:
+        output = processor.predict(frame)
         cv2.rectangle(frame, (0, 0), (frame.shape[1], frame.shape[0]), (0, 0, 255), thickness=2)
     frame = cv2.resize(frame,(64,64))
-    return frame , anomaly
+    return frame ,output
 
 cap = cv2.VideoCapture(0)
 
@@ -90,7 +95,7 @@ def process_video():
             break
         
         pred,anomaly = detect_anomalys(frame)
-        
+        print(anomaly)
         # Store the first frame that detects a model probability higher than 0.5
 
         img = Video(data=pred.tobytes(),anomaly=anomaly )
@@ -104,22 +109,24 @@ def process_video():
         
     cap.release()
 conn = engine.connect()
-table = Table('Videos', metadata,schema=None)
+table = Table('videos', metadata, Column('id',Integer, primary_key=True), 
+              Column('timestamp',DateTime,default=func.now()),
+              Column('data',LargeBinary),
+              Column('anomaly', String(70)))
 def get_frame():
-    #select_query = select(table)
-    #results = conn.execute(select_query)
-    results = session.query('Videos').all
+    select_query = table.select()
+    results = conn.execute(select_query)
     data = []
     for response in results:
-        image_frame = Image.open(io.BytesIO(response.data))  #response['data']
+        #data.append(response)
+        image_frame = base64.b64encode(response[2]).decode('utf-8')
 
-        data.append({'id': response['id'],
-                     'time': response['timestamp'],
+        data.append({'id': response[0],
+                     'time': response[1],
                      'image_frame': image_frame,
-                       'anomaly':response['anomaly'] })
+                       'anomaly':response[3] })
         
-    return jsonify(response)
-    # return Response(json.dumps(data, default=str), mimetype='application/json')
+    return Response(json.dumps(data, default=str), mimetype='application/json')
 
 @app.route('/video_feed')
 def video():
@@ -127,7 +134,7 @@ def video():
 
 @app.route('/get_data')
 def video_retrieve():
-    return Response(get_frame())
+    return get_frame()
 
 
 if __name__ == '__main__':
