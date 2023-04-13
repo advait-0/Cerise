@@ -4,35 +4,25 @@ import os
 import secrets
 from PIL import Image
 import tensorflow as tf
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from keras_preprocessing.image import ImageDataGenerator
 from tensorflow import keras
 import time
 import numpy as np
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, LargeBinary, DateTime, func, String , Table, select, MetaData
-from PIL import Image
-import io
+from flask_mysqldb import MySQL
+import MySQLdb.cursors
+import mysql.connector
+import datetime
+
 
 app=Flask(__name__)
 
-engine = create_engine('mysql://root:pass1234@localhost/db2')
-Base = declarative_base()
-
-class Video(Base):
-    __tablename__ = 'videos'
-    id = Column(Integer, primary_key=True)
-    timestamp = Column(DateTime, default=func.now())
-    data = Column(LargeBinary)
-    anomaly = Column(String(70))
-
-Base.metadata.create_all(engine)
-Session = sessionmaker(bind=engine)
-session = Session()
-
-metadata = MetaData()
+# app.config['MYSQL_HOST'] = 'localhost'
+# app.config['MYSQL_USER'] = 'root'
+# app.config['MYSQL_PASSWORD'] = 'pass1234'
+# app.config['MYSQL_DB'] = 'anomaly_detect'
+ 
+# mysql = MySQL(app)
 
 preprocess_fun = tf.keras.applications.densenet.preprocess_input
 datagen = ImageDataGenerator(rescale = 1./255, preprocessing_function = preprocess_fun)
@@ -50,23 +40,47 @@ def detect_anomaly(image):
 camera= cv2.VideoCapture("C:/Users/MIHIR RATHOD/Downloads/test_cute_cat.mp4")
 # cv2.VideoCapture(0)
 
-def save_picture(form_picture):
-    random_hex = secrets.token_hex(8)
-    _, f_ext = os.path.splitext(form_picture.filename)
-    picture_fn = random_hex + f_ext
-    picture_path = os.path.join(app.root_path, 'static/profile_pics', picture_fn)
+# def save_picture(form_picture):
+#     random_hex = secrets.token_hex(8)
+#     _, f_ext = os.path.splitext(form_picture.filename)
+#     picture_fn = random_hex + f_ext
+#     picture_path = os.path.join(app.root_path, 'static/profile_pics', picture_fn)
 
-    i = Image.open(form_picture)
-    i.save(picture_path)
+#     i = Image.open(form_picture)
+#     i.save(picture_path)
 
-    return picture_fn
+#     return picture_fn
 
 # model = keras.models.load_model("my_model_trained/content/my_model_trained")
+
+def add_data(path, anomaly):
+     try:
+        connection = mysql.connector.connect(host='localhost',
+                                            database='anomaly_detect',
+                                            user='root',
+                                            password='pass1234')
+
+        mySql_insert_query = """INSERT INTO video (img_path, anomaly) 
+                            VALUES 
+                            (%s , %s) """
+        
+        record = (path, anomaly)
+
+        cursor = connection.cursor()
+        cursor.execute(mySql_insert_query, record)
+        connection.commit()
+        print(cursor.rowcount, "Record inserted successfully into Laptop table")
+        cursor.close()
+
+     except mysql.connector.Error as error:
+        print("Failed to insert record into Laptop table {}".format(error))
+
+     connection.close()
 
 
 def generate_frames():
     success = 1
-    time_now = time.time() 
+    # time_now = time.time() 
     count = 0
     while success:
             
@@ -86,13 +100,36 @@ def generate_frames():
 
         else:
             print("Anomaly")
-            time_now = time.time()
-            count = 0
+            parent_dir = "C:/Users/MIHIR RATHOD/Desktop/Kavach"
+            child_dir = "/anomalies/"
+            current_time = datetime.datetime.now().strftime('%d-%m-%y-%H-%M-%S')
+            filename = current_time + '.png'
+            #print(current_time)
 
-            img = Video(data=frame.tobytes(),anomaly="anomaly" )
-            session.add(img)
-            session.commit()
+            path = parent_dir + child_dir + filename
+
+            directory = r'C:\\Users\\MIHIR RATHOD\Desktop\\Kavach\\anomalies'
+
+            os.chdir(directory) 
+
+            # Print the list of files in the directory before saving the image
+            # print("Before saving")   
+            # print(os.listdir(directory))   
+
+            # Save the image with the filename "cat.jpg"
             
+            cv2.imwrite(filename, frame) 
+            # frame.save(f'{path}')
+
+            
+            add_data(path, "Anomaly")
+            # with app.app_context():
+            #     cur = mysql.connection.cursor()
+            # cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            # cursor.execute('INSERT INTO video (img_path, anomaly) VALUES (% s, % s)', (path, "anomaly"))
+         
+            count = 0
+          
             
 
         if not success:
@@ -106,7 +143,7 @@ def generate_frames():
         # print("FPS: {0}".format(int(fps)))
         # print(prob)
         
-        
+        time.sleep(0.033)
         yield(b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
@@ -120,6 +157,18 @@ def index():
 @app.route('/video')
 def video():
     return Response(generate_frames(),mimetype='multipart/x-mixed-replace; boundary=frame')
+
+conn = MySQLdb.connect("localhost","root","pass1234","anomaly_detect" ) 
+cursor = conn.cursor()
+
+@app.route('/display.html')
+def display_db():
+    #  cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    #  cursor.execute('SELECT * FROM video')
+    cursor.execute("SELECT * FROM video") 
+    data = cursor.fetchall() #data from database 
+    return render_template("display.html", value=data)     
+     
 
 if __name__=="__main__":
     app.run(debug=True)

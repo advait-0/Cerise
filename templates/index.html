@@ -46,7 +46,7 @@ img {
     <!-- Right-sided navbar links -->
     <div class="w3-right w3-hide-small">
       <a href="#live" class="w3-bar-item w3-button">LIVE</a>
-      <a href="#anomaly" class="w3-bar-item w3-button"><i class="fa fa-camera"></i> ANOMALY </a>
+      <a href="display.html" class="w3-bar-item w3-button"><i class="fa fa-camera"></i> ANOMALY </a>
       <a href="#team" class="w3-bar-item w3-button"><i class="fa fa-user"></i> TEAM </a>
     </div>
     <!-- Hide right-floated links on small screens and replace them with a menu icon -->
@@ -78,5 +78,13 @@ img {
 <div class="w3-container" style="padding:128px 16px" id="live">
   <h3 class="w3-center">LIVE FEED FROM THE CAMERA</h3>
     <img src="{{ url_for('video') }}" width="50%">
+
+</div>
+<div class="w3-container" style="padding:128px 16px" id="anomaly" >
+  <h3 class="w3-center"> FEED FROM THE CAMERA</h3>
+    <img src="{{ url_for('video') }}" width="50%">
+
+</div>
+
 </body>
 </html>
